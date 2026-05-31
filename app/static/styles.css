@@ -69,6 +69,7 @@ h2 {
   flex-wrap: wrap;
 }
 
+input,
 select,
 button {
   height: 40px;
@@ -79,6 +80,7 @@ button {
   font: inherit;
 }
 
+input,
 select {
   padding: 0 34px 0 12px;
 }
@@ -90,6 +92,12 @@ button {
   color: #fff;
   font-weight: 700;
   cursor: pointer;
+}
+
+.button-secondary {
+  border-color: var(--line);
+  background: #f2f4f6;
+  color: var(--ink);
 }
 
 .toggle {
@@ -137,11 +145,193 @@ button {
   color: var(--danger-ink);
 }
 
+.notice--quota_insufficient {
+  border-color: #f0cf91;
+  background: var(--warning-bg);
+  color: var(--warning-ink);
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 16px;
+}
+
+.manual-entry {
+  margin-bottom: 16px;
+}
+
+.api-test {
+  margin-bottom: 16px;
+}
+
+.api-provider-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.api-provider {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 10px;
+  min-width: 0;
+  min-height: 198px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.api-provider--disabled {
+  background: #f4f5f7;
+}
+
+.api-provider-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.api-provider label {
+  display: grid;
+  gap: 6px;
+}
+
+.api-provider label span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.api-provider input {
+  width: 100%;
+  padding-right: 12px;
+}
+
+.api-provider p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.api-provider button {
+  width: 100%;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-pill--ready,
+.status-pill--available {
+  border-color: #a7d8c6;
+  background: #e8f6ef;
+  color: #0f5e3f;
+}
+
+.status-pill--disabled,
+.status-pill--missing_key {
+  border-color: #d8dde4;
+  background: #eef1f4;
+  color: #5f6b7a;
+}
+
+.status-pill--quota_insufficient {
+  border-color: #f0cf91;
+  background: var(--warning-bg);
+  color: var(--warning-ink);
+}
+
+.status-pill--error {
+  border-color: #f0a3a3;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.manual-form,
+.manual-record-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.manual-form label,
+.manual-record-form label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.manual-form label span,
+.manual-record-form label span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.manual-form input,
+.manual-form select,
+.manual-record-form input,
+.manual-record-form select {
+  width: 100%;
+}
+
+.manual-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  grid-column: 1 / -1;
+  gap: 12px;
+}
+
+.manual-actions span,
+.manual-record-summary {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.manual-list {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.manual-record {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.manual-record-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  padding: 0;
+}
+
+.manual-record-summary {
+  align-self: end;
+  padding-bottom: 11px;
+  white-space: nowrap;
 }
 
 .metric,
@@ -393,6 +583,19 @@ tr:last-child td {
   .usage-limit-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .manual-form,
+  .manual-record-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .api-provider-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-record {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 560px) {
@@ -407,6 +610,17 @@ tr:last-child td {
 
   .metrics {
     grid-template-columns: 1fr;
+  }
+
+  .manual-form,
+  .manual-record-form,
+  .api-provider-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .usage-limit-head {
@@ -424,6 +638,7 @@ tr:last-child td {
   }
 
   .collect-form,
+  input,
   select,
   button,
   .toggle {

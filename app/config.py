@@ -42,6 +42,9 @@ class Settings:
     openai_api_key: str | None
     anthropic_api_key: str | None
     gemini_api_key: str | None
+    openai_model: str
+    claude_model: str
+    gemini_model: str
     dry_run: bool
     default_provider_filter: str
     monthly_token_limit: int
@@ -58,6 +61,9 @@ settings = Settings(
     openai_api_key=os.getenv("OPENAI_API_KEY") or None,
     anthropic_api_key=os.getenv("ANTHROPIC_API_KEY") or None,
     gemini_api_key=os.getenv("GEMINI_API_KEY") or None,
+    openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+    claude_model=os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-latest"),
+    gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
     dry_run=_env_bool("DEFAULT_DRY_RUN", _env_bool("DRY_RUN", True)),
     default_provider_filter=os.getenv("DEFAULT_PROVIDER_FILTER", "all"),
     monthly_token_limit=max(_env_int("MONTHLY_TOKEN_LIMIT", 1_000_000), 0),

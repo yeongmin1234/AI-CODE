@@ -15,9 +15,12 @@ class UsageRecord:
     request_count: int
     cost_usd: float
     source: str = "collector"
+    total_tokens_override: int | None = None
 
     @property
     def total_tokens(self) -> int:
+        if self.total_tokens_override is not None:
+            return max(int(self.total_tokens_override or 0), 0)
         return total_tokens(self.input_tokens, self.output_tokens, self.cached_tokens)
 
 
@@ -28,3 +31,4 @@ class CollectionResult:
     dry_run: bool
     message: str
     success: bool = True
+    status: str | None = None

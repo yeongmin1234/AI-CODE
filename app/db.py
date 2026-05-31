@@ -71,6 +71,7 @@ def init_db() -> None:
     with get_db() as db:
         db.executescript(SCHEMA)
         _ensure_total_tokens_column(db)
+        db.execute("UPDATE usage_records SET source = 'dry_run' WHERE source = 'dry-run'")
         db.execute(
             """
             UPDATE usage_records

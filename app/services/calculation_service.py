@@ -10,7 +10,7 @@ PROVIDER_LABELS = {
 
 
 def total_tokens(input_tokens: int, output_tokens: int, cached_tokens: int) -> int:
-    return input_tokens + output_tokens + cached_tokens
+    return int(input_tokens or 0) + int(output_tokens or 0) + int(cached_tokens or 0)
 
 
 def percent(part: float, whole: float) -> float:
@@ -25,9 +25,9 @@ def token_limit_used_percent(total_token_count: int) -> float:
 
 def token_limit_warning_message(used_percent: float) -> str | None:
     if used_percent >= 100:
-        return "경고: 월간 사용량 한도를 초과했습니다."
+        return "경고: 월간 토큰 한도를 초과했습니다."
     if used_percent >= 80:
-        return "주의: 월간 사용량 한도의 80% 이상을 사용했습니다."
+        return "주의: 월간 토큰 한도의 80% 이상을 사용했습니다."
     return None
 
 

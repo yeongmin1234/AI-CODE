@@ -63,7 +63,7 @@ def get_recent_collector_runs(limit: int = 5) -> list[dict]:
 
 
 def _sanitize_message(message: str) -> str:
-    blocked_fragments = ("sk-", "OPENAI_ADMIN_KEY=", "OPENAI_API_KEY=")
+    blocked_fragments = ("sk-", "OPENAI_ADMIN_KEY=", "OPENAI_API_KEY=", "ANTHROPIC_API_KEY=", "GEMINI_API_KEY=")
     if any(fragment in message for fragment in blocked_fragments):
-        return "수집 중 오류가 발생했습니다. API 키와 설정을 확인해주세요."
+        return "수집 중 오류가 발생했습니다. API 키 설정을 확인해주세요."
     return message[:500]

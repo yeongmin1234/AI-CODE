@@ -1,64 +1,21 @@
 # AI API 사용량 대시보드
 
-개인용 AI API 사용량 대시보드입니다. OpenAI, Claude, Gemini 사용량을 로컬에서 한눈에 보기 위한 FastAPI + SQLite 기반 프로젝트입니다.
+FastAPI + SQLite 기반 로컬 AI 사용량 대시보드입니다. OpenAI, Claude, Gemini 제공자를 표시하고, dry-run 샘플 데이터, 수동 입력 데이터, 실제 API 테스트 호출의 토큰 사용량을 함께 볼 수 있습니다.
 
-현재 버전은 dry-run 기반 1차 안정화 버전입니다. 실제 OpenAI, Claude, Gemini API 연동은 아직 활성화하지 않고, 세 제공사의 샘플 데이터를 저장해 대시보드 흐름을 확인합니다. 이 대시보드는 비용이나 청구 금액이 아니라 토큰 사용량 중심으로 표시합니다.
+이 프로젝트는 토큰 사용량만 저장하고 표시합니다. 결제, 구독, 청구 기능은 구현하지 않습니다.
 
 ## 주요 기능
 
-- OpenAI / Claude / Gemini dry-run 샘플 데이터 생성
-- 이번 달 총 토큰, 요청 수, 입력 토큰, 출력 토큰, 캐시 토큰 표시
-- 제공사별 사용 비중 진행바
-- 월간 사용량 한도 진행바
-- 제공사·모델별 요약
-- 날짜별 사용량 요약
-- 전체 / OpenAI / Claude / Gemini 제공사 필터
-- SQLite `usage_records` 저장
-- `collector_runs` 수집 성공/실패 이력 저장
-- 중복 저장 방지를 위한 upsert 처리
-- API 키와 로컬 DB 파일을 Git에서 제외
+- OpenAI / Claude / Gemini 제공자 표시
+- dry-run 샘플 데이터 생성
+- 수동 사용량 입력, 수정, 삭제
+- OpenAI / Gemini 실제 API 테스트 호출의 토큰 사용량 저장
+- Claude는 현재 실제 수집 비활성 상태로 표시
+- `source=dry_run`, `source=manual`, `source=api` 구분 저장
+- 제공자별 사용 비중, 모델별 요약, 날짜별 요약 표시
+- 월간 토큰 한도 대비 사용률 표시
 
-## 기술 스택
-
-- Windows 로컬 실행 기준
-- Python
-- FastAPI
-- SQLite
-- Jinja2 템플릿
-- HTML/CSS
-
-## 폴더 구조
-
-```text
-app/
-  collectors/
-    base.py
-    openai_collector.py
-    claude_collector.py
-    gemini_collector.py
-  services/
-    calculation_service.py
-    collector_run_service.py
-    collector_service.py
-    usage_service.py
-  static/
-    styles.css
-  templates/
-    dashboard.html
-  config.py
-  db.py
-  main.py
-  models.py
-  schemas.py
-.env.example
-.gitignore
-requirements.txt
-README.md
-```
-
-## 설치 방법
-
-PowerShell에서 프로젝트 폴더로 이동한 뒤 실행합니다.
+## 설치
 
 ```powershell
 python -m venv .venv
@@ -67,32 +24,38 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-## 실행 방법
-
-기본 실행 명령어는 다음과 같습니다.
+## 실행
 
 ```powershell
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-브라우저에서 `http://127.0.0.1:8001`을 열면 됩니다.
+브라우저에서 `http://127.0.0.1:8001`을 엽니다.
 
-Windows에서 `[WinError 10013]` 또는 포트 충돌이 발생하면 8081 또는 5000 포트로 바꿔 실행해 보세요.
+## 다른 PC에서 이어서 작업하는 방법
 
-```powershell
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8081
-uvicorn app.main:app --reload --host 127.0.0.1 --port 5000
-```
-
-설정값을 읽어서 실행하려면 아래 명령도 사용할 수 있습니다.
+새 PC에서는 저장소를 다시 받은 뒤 로컬 환경을 새로 만듭니다.
 
 ```powershell
-python -m app.main
+git clone 저장소주소
+cd 프로젝트폴더
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
 ```
 
-## .env 설정
+그 다음 `.env`에 필요한 API 키를 직접 입력하고 서버를 실행합니다.
 
-`.env.example`을 복사한 `.env`에서 로컬 설정을 관리합니다.
+```powershell
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
+```
+
+`.env`는 GitHub에 올리지 않습니다. 회사 PC에서는 `.env`를 새로 만들어야 하며, API 키는 캡처하거나 공유하지 마세요.
+
+## .env 설정 예시
+
+`.env.example`에는 실제 키를 넣지 않습니다. 실제 키는 로컬 `.env`에만 입력하세요.
 
 ```env
 APP_HOST=127.0.0.1
@@ -105,104 +68,69 @@ OPENAI_API_KEY=
 OPENAI_ADMIN_KEY=
 ANTHROPIC_API_KEY=
 GEMINI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+CLAUDE_MODEL=claude-3-5-haiku-latest
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
-설정 설명:
+## OpenAI 연결
 
-- `APP_HOST`: 로컬 서버 host, 기본값 `127.0.0.1`
-- `APP_PORT`: 로컬 서버 port, 기본값 `8001`
-- `DEFAULT_DRY_RUN`: 기본 테스트 모드 여부, 기본값 `true`
-- `DEFAULT_PROVIDER_FILTER`: 기본 제공사 필터, 기본값 `all`
-- `MONTHLY_TOKEN_LIMIT`: 월간 토큰 사용량 한도, 기본값 `1000000`
+`OPENAI_API_KEY`가 설정되어 있으면 대시보드의 `실제 API 테스트 수집` 영역에서 OpenAI 테스트 호출을 실행할 수 있습니다. 짧은 테스트 프롬프트를 보내고 응답의 토큰 사용량을 `provider=openai`, `source=api`로 저장합니다.
 
-`.env.example`에는 실제 API 키를 넣지 않습니다.
+`OPENAI_API_KEY`와 `OPENAI_ADMIN_KEY`는 용도가 다릅니다.
 
-## 테스트 모드
+- `OPENAI_API_KEY`: 일반 모델 호출에 사용합니다. 이 대시보드의 OpenAI API 테스트 수집은 이 값을 사용합니다.
+- `OPENAI_ADMIN_KEY`: 조직 단위 사용량 조회 같은 관리 API에 사용할 수 있는 키입니다. 현재 일반 테스트 호출에는 사용하지 않습니다.
 
-테스트 모드가 켜진 상태에서 `사용량 수집` 버튼을 누르면 이번 달 1일부터 오늘까지의 샘플 데이터가 SQLite에 저장됩니다.
+`OPENAI_ADMIN_KEY`가 비어 있어도 OpenAI API 테스트 수집에는 영향이 없습니다.
 
-제공사를 `전체`로 선택하면 다음 샘플 데이터가 함께 생성됩니다.
+### OpenAI 429 insufficient_quota
 
-- OpenAI / `gpt-4o-mini`
-- Claude / `claude-3-5-sonnet`
-- Gemini / `gemini-1.5-flash`
+ChatGPT Plus/Pro 구독과 OpenAI API 사용은 별도로 관리됩니다. `OPENAI_API_KEY`가 있어도 API 크레딧, 결제수단, 사용 한도가 준비되어 있지 않으면 OpenAI API가 `429 insufficient_quota`를 반환할 수 있습니다.
 
-실제 API 호출은 하지 않습니다.
+이 경우 대시보드는 OpenAI 상태를 `쿼터 부족`으로 표시하고, `usage_records`에는 실패 데이터를 저장하지 않습니다. 토큰 사용량이 없는 호출 실패이므로 `source=api` 행을 만들지 않고, `collector_runs`에 한국어 요약 메시지만 저장합니다.
 
-## 계산 방식
+OpenAI Platform의 Billing/Usage 설정에서 결제수단 또는 사용 한도를 확인하세요.
 
-총 토큰:
+## Gemini 연결
+
+`GEMINI_API_KEY`가 설정되어 있으면 Gemini 테스트 호출을 실행할 수 있습니다. 응답의 `usage_metadata`에서 입력 토큰, 출력 토큰, 총 토큰을 읽어 `provider=gemini`, `source=api`로 저장합니다. 일부 토큰 값이 비어 있으면 0 또는 계산 가능한 값으로 안전하게 처리합니다.
+
+Gemini는 OpenAI와 별도의 `GEMINI_API_KEY`로 동작합니다.
+
+## Claude 상태
+
+현재 Claude 실제 API 수집은 비활성 상태입니다. `ANTHROPIC_API_KEY`가 비어 있어도 앱은 정상 실행되며, Claude API 테스트 수집을 누르면 실제 호출을 하지 않고 비활성 안내 메시지만 표시합니다.
+
+Claude가 비활성 상태여도 제공자 목록과 필터에는 계속 표시됩니다. 다만 기본 dry-run 샘플 데이터에는 Claude 사용량을 포함하지 않습니다. Claude 사용량을 기록하려면 대시보드의 수동 입력 기능을 사용하세요.
+
+기존 DB에 예전 Claude 샘플 데이터가 남아 있을 수 있어, dry-run 수집을 실행할 때 다음 데이터만 안전하게 정리합니다.
 
 ```text
-total_tokens = input_tokens + output_tokens + cached_tokens
+provider = 'claude' AND source = 'dry_run'
 ```
 
-제공사별 사용 비중:
+수동 입력 데이터(`source=manual`)와 API 데이터(`source=api`)는 삭제하지 않습니다.
 
-```text
-제공사별 사용 비중 = 해당 제공사의 total_tokens / 전체 total_tokens * 100
-```
+## 저장 방식
 
-월간 사용량 한도:
-
-```text
-월간 사용률 = 이번 달 total_tokens / MONTHLY_TOKEN_LIMIT * 100
-```
-
-전체 토큰이 0이면 사용 비중은 0%로 처리합니다. 월간 토큰 한도가 0이면 월간 사용률도 0%로 처리합니다.
-
-## 중복 저장 방지
-
-`usage_records`는 다음 unique key를 사용합니다.
+`usage_records`는 다음 기준으로 중복 저장을 방지합니다.
 
 ```text
 provider + model + usage_date + source
 ```
 
-같은 날짜, 제공사, 모델, source의 데이터가 이미 있으면 새 row를 계속 추가하지 않고 기존 row를 업데이트합니다. 따라서 `사용량 수집` 버튼을 여러 번 눌러도 대시보드 숫자가 비정상적으로 누적되지 않습니다.
+총 토큰은 다음 기준을 유지합니다.
 
-수집 실행 이력은 `collector_runs` 테이블에 별도로 저장합니다.
+```text
+total_tokens = input_tokens + output_tokens + cached_tokens
+```
+
+API 응답이 별도의 총 토큰 값을 제공하면 해당 값을 안전하게 저장하고, 값이 없으면 위 기준으로 계산합니다.
 
 ## 보안
 
 - `.env`는 `.gitignore`에 포함되어 있습니다.
-- SQLite DB 파일은 `*.db`, `data/*.db` 규칙으로 Git에서 제외합니다.
-- `.venv`, `venv`, `__pycache__`, `*.pyc`도 Git에서 제외합니다.
-- API 키는 서버 설정에서만 읽고 HTML에 출력하지 않습니다.
-- 오류 메시지에는 API 키나 민감정보를 포함하지 않도록 처리합니다.
-
-## 실제 API 연동
-
-이번 1차 안정화 단계에서는 실제 OpenAI / Claude / Gemini API 연동을 하지 않습니다.
-
-추후 실제 OpenAI 사용량 수집을 활성화할 때는 `OPENAI_ADMIN_KEY`를 사용하고, Claude/Gemini는 각각 collector 파일에 실제 API 호출 로직을 추가하면 됩니다.
-
-## 문제 해결 FAQ
-
-### 서버가 실행되지 않습니다.
-
-먼저 가상환경이 활성화되어 있는지 확인하세요.
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-### 8001 포트가 막혀 있습니다.
-
-8081 또는 5000 포트로 바꿔 실행하세요.
-
-```powershell
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8081
-```
-
-### 데이터가 표시되지 않습니다.
-
-대시보드에서 `테스트 모드`가 체크된 상태로 `사용량 수집`을 누르세요.
-
-### 버튼을 여러 번 눌러도 괜찮나요?
-
-괜찮습니다. 같은 날짜 + 제공사 + 모델 + source 기준으로 upsert되므로 같은 dry-run 데이터가 무한히 중복 저장되지 않습니다.
-
-### 월간 사용량 한도를 바꾸고 싶습니다.
-
-`.env`의 `MONTHLY_TOKEN_LIMIT` 값을 변경한 뒤 서버를 재시작하세요.
+- 실제 API 키를 코드, README, HTML, JavaScript, 로그에 출력하지 않습니다.
+- API 호출 실패 시 전체 traceback을 화면에 노출하지 않고 한국어 안내 메시지만 표시합니다.
+- 실제 키를 Git에 올리지 마세요.

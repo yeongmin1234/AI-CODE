@@ -45,6 +45,135 @@ def upsert_usage_records(records: list[UsageRecord]) -> int:
     return len(records)
 
 
+def delete_claude_dry_run_records() -> int:
+    with get_db() as db:
+        cursor = db.execute(
+            "DELETE FROM usage_records WHERE provider = 'claude' AND source = 'dry_run'",
+        )
+        return cursor.rowcount
+
+
+def upsert_manual_usage_record(record: UsageRecord) -> int:
+    if record.source != "manual":
+        raise ValueError("manual source만 저장할 수 있습니다.")
+    return upsert_usage_records([record])
+
+
+def get_manual_usage_records(
+    start_date: date | None = None,
+    end_date: date | None = None,
+    provider: str | None = None,
+) -> list[dict]:
+    params: list[str] = []
+    where = _where_clause(start_date, end_date, provider, params, source="manual")
+    return _fetch_all(
+        f"""
+        SELECT
+            id,
+            usage_date,
+            provider,
+            model,
+            request_count,
+            input_tokens,
+            output_tokens,
+            cached_tokens,
+            total_tokens
+        FROM usage_records
+        {where}
+        ORDER BY usage_date DESC, provider, model
+        """,
+        params,
+    )
+
+
+def update_manual_usage_record(record_id: int, record: UsageRecord) -> bool:
+    if record.source != "manual":
+        raise ValueError("manual source만 수정할 수 있습니다.")
+
+    with get_db() as db:
+        existing = db.execute(
+            "SELECT id FROM usage_records WHERE id = ? AND source = 'manual'",
+            (record_id,),
+        ).fetchone()
+        if existing is None:
+            return False
+
+        conflicting = db.execute(
+            """
+            SELECT id
+            FROM usage_records
+            WHERE provider = ?
+              AND model = ?
+              AND usage_date = ?
+              AND source = 'manual'
+              AND id != ?
+            """,
+            (record.provider, record.model, record.usage_date.isoformat(), record_id),
+        ).fetchone()
+        if conflicting:
+            db.execute("DELETE FROM usage_records WHERE id = ?", (record_id,))
+            db.execute(
+                """
+                UPDATE usage_records
+                SET
+                    input_tokens = ?,
+                    output_tokens = ?,
+                    cached_tokens = ?,
+                    total_tokens = ?,
+                    request_count = ?,
+                    cost_usd = 0
+                WHERE id = ?
+                """,
+                (
+                    record.input_tokens,
+                    record.output_tokens,
+                    record.cached_tokens,
+                    record.total_tokens,
+                    record.request_count,
+                    conflicting["id"],
+                ),
+            )
+            return True
+
+        db.execute(
+            """
+            UPDATE usage_records
+            SET
+                provider = ?,
+                model = ?,
+                usage_date = ?,
+                input_tokens = ?,
+                output_tokens = ?,
+                cached_tokens = ?,
+                total_tokens = ?,
+                request_count = ?,
+                cost_usd = 0
+            WHERE id = ? AND source = 'manual'
+            """,
+            (
+                record.provider,
+                record.model,
+                record.usage_date.isoformat(),
+                record.input_tokens,
+                record.output_tokens,
+                record.cached_tokens,
+                record.total_tokens,
+                record.request_count,
+                record_id,
+            ),
+        )
+        return True
+
+
+def delete_manual_usage_record(record_id: int) -> bool:
+    with get_db() as db:
+        cursor = db.execute(
+            "DELETE FROM usage_records WHERE id = ? AND source = 'manual'",
+            (record_id,),
+        )
+        return cursor.rowcount > 0
+
+
 def get_daily_summary(
     start_date: date | None = None,
     end_date: date | None = None,
@@ -173,6 +302,7 @@ def _where_clause(
     end_date: date | None,
     provider: str | None,
     params: list[str],
+    source: str | None = None,
 ) -> str:
     clauses: list[str] = []
     if start_date:
@@ -184,6 +314,9 @@ def _where_clause(
     if provider:
         clauses.append("provider = ?")
         params.append(provider)
+    if source:
+        clauses.append("source = ?")
+        params.append(source)
     return "WHERE " + " AND ".join(clauses) if clauses else ""
 
 
