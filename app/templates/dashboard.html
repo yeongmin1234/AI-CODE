@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI API 사용량 대시보드</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">{{ month_key }}</p>
+        <h1>AI API 사용량 대시보드</h1>
+      </div>
+      <form class="collect-form" method="post" action="/collect">
+        <select name="provider" aria-label="제공사 선택">
+          {% for provider in provider_options %}
+          <option value="{{ provider.value }}" {% if provider.value == selected_provider %}selected{% endif %}>{{ provider.label }}</option>
+          {% endfor %}
+        </select>
+        <label class="toggle">
+          <input type="checkbox" name="dry_run" value="true" {% if dry_run_default %}checked{% endif %}>
+          <span>테스트 모드</span>
+        </label>
+        <button type="submit">사용량 수집</button>
+      </form>
+    </header>
+
+    {% if collect_message %}
+    <section class="notice notice--{{ collect_status }}">
+      {{ collect_message }}
+    </section>
+    {% endif %}
+
+    <section class="metrics">
+      <article class="metric">
+        <span>이번 달 총 토큰</span>
+        <strong>{{ "{:,}".format(month_total.total_tokens) }}</strong>
+        <small>캐시 토큰 {{ "{:,}".format(month_total.cached_tokens) }}</small>
+      </article>
+      <article class="metric">
+        <span>요청 수</span>
+        <strong>{{ "{:,}".format(month_total.request_count) }}</strong>
+        <small>이번 달 누적</small>
+      </article>
+      <article class="metric">
+        <span>입력 토큰</span>
+        <strong>{{ "{:,}".format(month_total.input_tokens) }}</strong>
+        <small>선택된 제공사 기준</small>
+      </article>
+      <article class="metric">
+        <span>출력 토큰</span>
+        <strong>{{ "{:,}".format(month_total.output_tokens) }}</strong>
+        <small>선택된 제공사 기준</small>
+      </article>
+    </section>
+
+    <section class="provider-share">
+      <div class="section-head">
+        <div>
+          <h2>이번 달 제공사별 사용 비중</h2>
+          <span>총 토큰 기준</span>
+        </div>
+        {% if selected_provider != "all" %}
+        <p>{{ provider_filter_label }} 선택 기준으로 표시합니다.</p>
+        {% endif %}
+      </div>
+      {% if month_total.total_tokens > 0 %}
+      <div class="provider-bars">
+        {% for item in provider_usage_share %}
+        <div class="provider-bar provider-bar--{{ item.provider }}">
+          <div class="provider-bar-head">
+            <strong>{{ item.label }}</strong>
+            <span>{{ item.percent }}% · {{ "{:,}".format(item.value|int) }} 토큰</span>
+          </div>
+          <div class="provider-track" aria-label="{{ item.label }} 사용 비중">
+            <span style="width: {{ item.percent }}%"></span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="empty empty--compact">표시할 사용량 데이터가 없습니다.</p>
+      {% endif %}
+    </section>
+
+    <section class="usage-limit {% if token_limit_warning_level %}usage-limit--{{ token_limit_warning_level }}{% endif %}">
+      <div class="usage-limit-head">
+        <div>
+          <span>월간 사용량 한도</span>
+          <strong>{{ token_limit_used_percent }}%</strong>
+        </div>
+        {% if token_limit_warning %}
+        <p class="usage-limit-warning">{{ token_limit_warning }}</p>
+        {% endif %}
+      </div>
+      <div class="usage-limit-stats">
+        <div>
+          <span>월간 토큰 한도</span>
+          <strong>{{ "{:,}".format(monthly_token_limit) }}</strong>
+        </div>
+        <div>
+          <span>이번 달 사용 토큰</span>
+          <strong>{{ "{:,}".format(current_total_tokens) }}</strong>
+        </div>
+        <div>
+          <span>남은 토큰 한도</span>
+          <strong>{{ "{:,}".format(remaining_token_limit) }}</strong>
+        </div>
+        <div>
+          <span>사용률 퍼센트</span>
+          <strong>{{ token_limit_used_percent }}%</strong>
+        </div>
+      </div>
+      <div class="progress" aria-label="월간 사용량 한도">
+        <span style="width: {{ [token_limit_used_percent, 100]|min }}%"></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>최근 수집 실행 이력</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>제공사</th>
+              <th>모드</th>
+              <th>상태</th>
+              <th>기간</th>
+              <th>수집 건수</th>
+              <th>저장 건수</th>
+              <th>메시지</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for run in collector_runs %}
+            <tr>
+              <td>{{ run.provider }}</td>
+              <td>{% if run.dry_run %}테스트 모드{% else %}실제 수집{% endif %}</td>
+              <td>{% if run.status == "success" %}성공{% elif run.status == "failed" %}실패{% else %}진행 중{% endif %}</td>
+              <td>{{ run.start_date }} ~ {{ run.end_date }}</td>
+              <td>{{ "{:,}".format(run.records_collected) }}</td>
+              <td>{{ "{:,}".format(run.records_saved) }}</td>
+              <td>{{ run.message or "-" }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="empty">아직 수집 실행 이력이 없습니다.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>제공사·모델별 요약</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>제공사</th>
+                <th>모델</th>
+                <th>요청 수</th>
+                <th>입력 토큰</th>
+                <th>출력 토큰</th>
+                <th>캐시 토큰</th>
+                <th>총 토큰</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in provider_summary %}
+              <tr>
+                <td>{{ row.provider }}</td>
+                <td>{{ row.model }}</td>
+                <td>{{ "{:,}".format(row.request_count) }}</td>
+                <td>{{ "{:,}".format(row.input_tokens) }}</td>
+                <td>{{ "{:,}".format(row.output_tokens) }}</td>
+                <td>{{ "{:,}".format(row.cached_tokens) }}</td>
+                <td>{{ "{:,}".format(row.total_tokens) }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" class="empty">아직 데이터가 없습니다. 테스트 모드로 먼저 사용량을 수집해보세요.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>날짜별 사용량 요약</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>제공사</th>
+                <th>모델</th>
+                <th>요청 수</th>
+                <th>총 토큰</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in daily_summary %}
+              <tr>
+                <td>{{ row.usage_date }}</td>
+                <td>{{ row.provider }}</td>
+                <td>{{ row.model }}</td>
+                <td>{{ "{:,}".format(row.request_count) }}</td>
+                <td>{{ "{:,}".format(row.total_tokens) }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="empty">표시할 날짜별 데이터가 없습니다.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
